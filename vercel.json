@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/scorm/(.*)",
+      "destination": "https://jodex-s3.s3.eu-north-1.amazonaws.com/$1"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <script>
+      window.parent.postMessage(
+        { type: "SCORM_SESSION_ENDED" },
+        "https://bicmas-trainee.vercel.app"
+      );
+    </script>
+  </body>
+</html>

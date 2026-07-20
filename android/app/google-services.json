@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "144630473545",
+    "project_id": "bicmas-messaging",
+    "storage_bucket": "bicmas-messaging.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144630473545:android:1bc2afa91fb8ae2a22f098",
+        "android_client_info": {
+          "package_name": "com.bicmas.academy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzzyJ3beaAI6ffOfl3l6KERwj_eTOKB7w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
