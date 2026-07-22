@@ -17,11 +17,21 @@ const normalizeProgress = (progress?: number) => {
   return Math.min(100, Math.max(0, Math.round(percent)));
 };
 
+type SyncOptions = {
+  /** Practice session — do not downgrade official completed course status in the UI cache. */
+  practice?: boolean;
+};
+
 export const useAttemptSync = () => {
   const queryClient = useQueryClient();
 
-  const syncAttempt = async (attemptId: string, courseId: string) => {
+  const syncAttempt = async (
+    attemptId: string,
+    courseId: string,
+    options: SyncOptions = {},
+  ) => {
     const data = await syncCourseAttempt(attemptId);
+    const practice = Boolean(options.practice);
 
     const pct = normalizeProgress(data.completionPercentage ?? 0);
     const status = data.status;
@@ -36,19 +46,29 @@ export const useAttemptSync = () => {
         courses: old.courses.map((course: any) => {
           if (course.id !== courseId) return course;
 
+          const alreadyCompleted =
+            course.status === CourseStatus.Completed ||
+            course.status === "COMPLETED" ||
+            course.status === "PASSED";
+
+          // Practice sessions must not flip official library status to Failed.
+          if (practice && alreadyCompleted && (requiresRetake || !passed)) {
+            return course;
+          }
+
           return {
             ...course,
             progress: requiresRetake ? pct : Math.max(pct, course.progress ?? 0),
             status: mapStatus(status, pct, requiresRetake),
             quizScore: data.scorePercent ?? course.quizScore ?? null,
             passingScore: data.passingScore ?? course.passingScore,
-            requiresRetake,
+            requiresRetake: practice && alreadyCompleted ? false : requiresRetake,
           };
         }),
       };
     });
 
-    if (passed && !requiresRetake) {
+    if (passed && !requiresRetake && !practice) {
       try {
         const claimed = await claimMyCourseCertificate(courseId);
         const certificateUrl =
@@ -79,11 +99,17 @@ export const useAttemptSync = () => {
         queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         queryClient.invalidateQueries({ queryKey: ["assignedCourses"] });
       }, 1500);
-    } else if (requiresRetake) {
+    } else if (requiresRetake && !practice) {
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         queryClient.invalidateQueries({ queryKey: ["assignedCourses"] });
       }, 500);
+    } else if (practice) {
+      // Refresh so HR-facing completion stays authoritative after practice.
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["assignedCourses"] });
+      }, 1500);
     }
 
     return data;

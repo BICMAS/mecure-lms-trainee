@@ -7,6 +7,7 @@ import {
   Trash2,
   Award,
   Clock,
+  RotateCcw,
 } from "lucide-react";
 import { hasCourseBeenStartedLocally, markCourseStartedLocally } from "@/utils/courseStartState";
 
@@ -15,6 +16,7 @@ interface CourseCardProps {
   progress: number;
   status?: CourseStatus | string | null;
   onStart: (id: string) => void;
+  onPracticeRetake?: (id: string) => void;
   onViewCertificate?: (id: string) => void;
   onDownload: (id: string) => void;
   onRemoveDownload: (id: string) => void;
@@ -58,6 +60,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   progress,
   status,
   onStart,
+  onPracticeRetake,
   onViewCertificate,
   onDownload,
   onRemoveDownload,
@@ -267,6 +270,24 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             </button>
 
             <div className="flex items-center gap-2">
+              {isCompleted && onPracticeRetake && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPracticeRetake(course.id);
+                  }}
+                  disabled={isDisabled}
+                  className={`text-xs font-medium flex items-center gap-1 ${
+                    isDisabled
+                      ? "cursor-not-allowed text-slate-400"
+                      : "text-slate-600 hover:text-brand-primary"
+                  }`}
+                  title="Replay without removing completion or certificate"
+                >
+                  <RotateCcw size={12} />
+                  Practice
+                </button>
+              )}
               {isCompleted && (
                 <div className="text-yellow-600 flex items-center gap-1 text-xs font-medium bg-yellow-50 px-2 py-1 rounded-full">
                   <Award size={12} /> Certified

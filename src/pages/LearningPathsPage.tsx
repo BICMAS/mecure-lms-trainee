@@ -45,6 +45,9 @@ export default function LearningPathsPage() {
                   progress={course.progress}
                   status={course.status}
                   onStart={() => navigate(`/course/${course.id}`)}
+                  onPracticeRetake={() =>
+                    navigate(`/course/${course.id}?practice=1`)
+                  }
                   onDownload={() => download(course.id)}
                   onRemoveDownload={() => remove(course.id)}
                   isOfflineMode={isOffline}

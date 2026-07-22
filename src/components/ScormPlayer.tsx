@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Course } from "../types";
+import { useSearchParams } from "react-router-dom";
+import { Course, CourseStatus } from "../types";
 import { Award, Download, ArrowLeft, RotateCcw, XCircle } from "lucide-react";
 import { fetchScormLaunchUrl } from "@/api/scorm";
-import { retakeCourse } from "@/api/attempts";
+import { practiceRetakeCourse, retakeCourse } from "@/api/attempts";
 import { useAttemptSync } from "@/hooks/useAttemptSync";
 import { getApiV1BaseUrl } from "@/config/api";
 import { getAccessToken } from "@/utils/auth";
@@ -35,6 +36,13 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
   onUpdateProgress,
   onViewCertificate,
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const startInPracticeMode =
+    searchParams.get("practice") === "1" ||
+    searchParams.get("practice") === "true";
+  /** Only bootstrap practice launch once from the URL (clearing ?practice must not re-fetch normal launch). */
+  const pendingPracticeBootstrap = useRef(startInPracticeMode);
+
   const resolvedLessonWithScorm =
     course.modules
       ?.flatMap((module: any) =>
@@ -70,6 +78,7 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
     course.passingScore ?? 70,
   );
   const [isRetaking, setIsRetaking] = useState(false);
+  const [isPracticeSession, setIsPracticeSession] = useState(startInPracticeMode);
   const [isCompletionSyncing, setIsCompletionSyncing] = useState(false);
   const [completionSyncMessage, setCompletionSyncMessage] = useState<string | null>(null);
   const [moduleAccess, setModuleAccess] = useState<CourseModuleAccess | null>(null);
@@ -79,6 +88,7 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
     Boolean(course.modulePacingEnabled),
   );
 
+  const isPracticeSessionRef = useRef(isPracticeSession);
   const scormAttemptIdRef = useRef<string | null>(null);
   const lastReportedProgress = useRef<number>(0);
   const lastSavedProgress = useRef<number>(0);
@@ -92,6 +102,10 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
   useEffect(() => {
     scormAttemptIdRef.current = scormAttemptId;
   }, [scormAttemptId]);
+
+  useEffect(() => {
+    isPracticeSessionRef.current = isPracticeSession;
+  }, [isPracticeSession]);
 
   useEffect(() => {
     onUpdateProgressRef.current = onUpdateProgress;
@@ -113,7 +127,9 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
     }
 
     syncTimeoutRef.current = window.setTimeout(() => {
-      syncAttempt(attemptId, course.id).catch(console.error);
+      syncAttempt(attemptId, course.id, {
+        practice: isPracticeSessionRef.current,
+      }).catch(console.error);
     }, 5000);
   };
 
@@ -129,7 +145,9 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
     setCompletionSyncMessage("Checking your quiz score...");
 
     try {
-      const updated = await syncAttempt(attemptId, course.id);
+      const updated = await syncAttempt(attemptId, course.id, {
+        practice: isPracticeSessionRef.current,
+      });
       if (updated?.attemptId && updated.attemptId !== scormAttemptIdRef.current) {
         scormAttemptIdRef.current = updated.attemptId;
         setScormAttemptId(updated.attemptId);
@@ -145,8 +163,12 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
       setSessionPassed(passed && !requiresRetake);
       setCompletionSyncMessage(
         passed && !requiresRetake
-          ? "Course passed"
-          : "Quiz score below the required cutoff",
+          ? isPracticeSessionRef.current
+            ? "Practice session passed"
+            : "Course passed"
+          : isPracticeSessionRef.current
+            ? "Practice quiz below the required cutoff (official completion unchanged)"
+            : "Quiz score below the required cutoff",
       );
       return updated;
     } catch (e) {
@@ -171,33 +193,64 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
     }
   };
 
+  const applyLaunchResult = (result: {
+    launchUrl?: string;
+    scormAttemptId?: string;
+    passingScore?: number;
+  }) => {
+    completionTriggered.current = false;
+    setShowEndScreen(false);
+    setSessionPassed(null);
+    setSessionScorePercent(null);
+    setScormProgress(0);
+    lastReportedProgress.current = 0;
+    lastSavedProgress.current = 0;
+
+    if (result?.launchUrl) {
+      setLaunchUrl(result.launchUrl);
+    }
+    if (result?.scormAttemptId) {
+      scormAttemptIdRef.current = result.scormAttemptId;
+      setScormAttemptId(result.scormAttemptId);
+    }
+    if (result?.passingScore != null) {
+      setSessionPassingScore(result.passingScore);
+    }
+  };
+
   const handleRetake = async () => {
     try {
       setIsRetaking(true);
       setError(null);
+      setIsPracticeSession(false);
       const result = await retakeCourse(course.id);
-
-      completionTriggered.current = false;
-      setShowEndScreen(false);
-      setSessionPassed(null);
-      setSessionScorePercent(null);
-      setScormProgress(0);
-      lastReportedProgress.current = 0;
-      lastSavedProgress.current = 0;
-
-      if (result?.launchUrl) {
-        setLaunchUrl(result.launchUrl);
-      }
-      if (result?.scormAttemptId) {
-        scormAttemptIdRef.current = result.scormAttemptId;
-        setScormAttemptId(result.scormAttemptId);
-      }
-      if (result?.passingScore != null) {
-        setSessionPassingScore(result.passingScore);
-      }
+      applyLaunchResult(result);
     } catch (e) {
       console.error("Retake failed", e);
       setError(e instanceof Error ? e.message : "Failed to start retake");
+    } finally {
+      setIsRetaking(false);
+    }
+  };
+
+  const handlePracticeRetake = async () => {
+    try {
+      setIsRetaking(true);
+      setError(null);
+      setIsPracticeSession(true);
+      const result = await practiceRetakeCourse(course.id);
+      applyLaunchResult(result);
+      // Clear ?practice=1 so refresh doesn't double-start unexpectedly mid-session.
+      if (searchParams.has("practice")) {
+        const next = new URLSearchParams(searchParams);
+        next.delete("practice");
+        setSearchParams(next, { replace: true });
+      }
+    } catch (e) {
+      console.error("Practice retake failed", e);
+      setError(
+        e instanceof Error ? e.message : "Failed to start practice retake",
+      );
     } finally {
       setIsRetaking(false);
     }
@@ -207,7 +260,9 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
     let syncSucceeded = false;
     try {
       if (scormAttemptIdRef.current) {
-        const updated = await syncAttempt(scormAttemptIdRef.current, course.id);
+        const updated = await syncAttempt(scormAttemptIdRef.current, course.id, {
+          practice: isPracticeSessionRef.current,
+        });
         console.log("[PLAYER] Sync returned", updated);
         syncSucceeded = true;
 
@@ -294,15 +349,31 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
         lastReportedProgress.current = 0;
         lastSavedProgress.current = 0;
 
-        const res = await fetchScormLaunchUrl(resolvedScormPackageId, {
-          courseId: course.id,
-          assignmentId: course.assignmentId ?? (course as any).assignmentId ?? null,
-          lessonId: resolvedLessonWithScorm?.lessonId ?? null,
-          moduleId: selectedModule?.moduleId ?? resolvedLessonWithScorm?.moduleId ?? null,
-        });
+        if (pendingPracticeBootstrap.current) {
+          pendingPracticeBootstrap.current = false;
+          setIsPracticeSession(true);
+          const result = await practiceRetakeCourse(course.id);
+          setLaunchUrl(result.launchUrl);
+          setScormAttemptId(result.scormAttemptId);
+          if (result.passingScore != null) {
+            setSessionPassingScore(result.passingScore);
+          }
+          if (searchParams.has("practice")) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("practice");
+            setSearchParams(next, { replace: true });
+          }
+        } else {
+          const res = await fetchScormLaunchUrl(resolvedScormPackageId, {
+            courseId: course.id,
+            assignmentId: course.assignmentId ?? (course as any).assignmentId ?? null,
+            lessonId: resolvedLessonWithScorm?.lessonId ?? null,
+            moduleId: selectedModule?.moduleId ?? resolvedLessonWithScorm?.moduleId ?? null,
+          });
 
-        setLaunchUrl(res.launchUrl);
-        setScormAttemptId(res.scormAttemptId);
+          setLaunchUrl(res.launchUrl);
+          setScormAttemptId(res.scormAttemptId);
+        }
       } catch (err) {
         setError(
           err instanceof Error && err.message
@@ -457,6 +528,10 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
   // ----------------------------
   if (showEndScreen) {
     const failed = sessionPassed === false;
+    const officiallyCompleted =
+      course.status === CourseStatus.Completed || Boolean(course.certificateUrl);
+    const usePracticeRetakeCta = isPracticeSession || officiallyCompleted;
+
     return (
       <div className="fixed inset-0 bg-slate-50 flex flex-col">
         <header className="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
@@ -480,14 +555,28 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
               <Award size={64} className="mx-auto mb-6 text-green-600" />
             )}
             <h1 className="text-3xl font-bold mb-4">
-              {failed ? "Quiz not passed" : "Course completed"}
+              {failed
+                ? usePracticeRetakeCta
+                  ? "Practice quiz not passed"
+                  : "Quiz not passed"
+                : isPracticeSession
+                  ? "Practice session complete"
+                  : "Course completed"}
             </h1>
             {failed && (
               <p className="text-slate-600 mb-4">
                 You scored{" "}
                 <strong>{sessionScorePercent ?? "—"}%</strong>. The minimum
                 required score is <strong>{sessionPassingScore}%</strong>.
-                Please retake the course to try again.
+                {usePracticeRetakeCta
+                  ? " Your official completion and certificate are unchanged. You can practice again."
+                  : " Please retake the course to try again."}
+              </p>
+            )}
+            {!failed && isPracticeSession && (
+              <p className="text-slate-600 mb-4">
+                This was a practice run. Your official completion and certificate
+                stay as they are.
               </p>
             )}
             {completionSyncMessage && (
@@ -502,22 +591,44 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               {failed ? (
                 <button
-                  onClick={() => void handleRetake()}
+                  onClick={() =>
+                    void (usePracticeRetakeCta
+                      ? handlePracticeRetake()
+                      : handleRetake())
+                  }
                   className="bg-brand-primary text-white px-6 py-3 rounded flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:bg-brand-primary/60"
                   disabled={isCompletionSyncing || isRetaking}
                 >
                   <RotateCcw size={18} />
-                  {isRetaking ? "Starting retake..." : "Retake Course"}
+                  {isRetaking
+                    ? "Starting..."
+                    : usePracticeRetakeCta
+                      ? "Retake for practice"
+                      : "Retake Course"}
                 </button>
               ) : (
-                <button
-                  onClick={onViewCertificate}
-                  className="bg-brand-primary text-white px-6 py-3 rounded flex items-center gap-2 disabled:cursor-not-allowed disabled:bg-brand-primary/60"
-                  disabled={isCompletionSyncing || sessionPassed !== true}
-                >
-                  <Download size={18} />
-                  {isCompletionSyncing ? "Syncing..." : "Certificate"}
-                </button>
+                <>
+                  <button
+                    onClick={onViewCertificate}
+                    className="bg-brand-primary text-white px-6 py-3 rounded flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:bg-brand-primary/60"
+                    disabled={
+                      isCompletionSyncing ||
+                      (sessionPassed !== true && !officiallyCompleted)
+                    }
+                  >
+                    <Download size={18} />
+                    {isCompletionSyncing ? "Syncing..." : "Certificate"}
+                  </button>
+                  <button
+                    onClick={() => void handlePracticeRetake()}
+                    className="border border-brand-primary text-brand-primary px-6 py-3 rounded flex items-center justify-center gap-2 hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isCompletionSyncing || isRetaking}
+                    title="Replay the course without removing your completion or certificate"
+                  >
+                    <RotateCcw size={18} />
+                    {isRetaking ? "Starting..." : "Retake for practice"}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -536,7 +647,9 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
           onClick={async () => {
             try {
               if (scormAttemptIdRef.current) {
-                await syncAttempt(scormAttemptIdRef.current, course.id);
+                await syncAttempt(scormAttemptIdRef.current, course.id, {
+                  practice: isPracticeSessionRef.current,
+                });
               }
             } catch (e) {
               console.error("Final sync failed", e);
@@ -565,6 +678,11 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
         <div className="font-medium">
           {course.title}
           {selectedModule ? ` — ${selectedModule.name}` : ""}
+          {isPracticeSession && (
+            <span className="ml-2 text-xs font-normal text-slate-300">
+              Practice
+            </span>
+          )}
         </div>
         <div className="w-16" />
       </header>

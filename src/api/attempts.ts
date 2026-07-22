@@ -124,6 +124,21 @@ export const retakeCourse = async (courseId: string) => {
 };
 
 /**
+ * Practice retake after a successful pass.
+ * Fresh SCORM session without clearing official completion/certificate.
+ */
+export const practiceRetakeCourse = async (courseId: string) => {
+  const res = await authFetch(
+    `${BASE_URL}/attempts/courses/${courseId}/practice-retake`,
+    {
+      method: "POST",
+    },
+  );
+
+  return res?.data ?? res;
+};
+
+/**
  * Smart sync:
  * 1. Pull SCORM progress
  * 2. Update local attempt if backend returns percentage
