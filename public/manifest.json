@@ -4,7 +4,7 @@
   "description": "Offline-capable trainee learning platform",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F7FA",
+  "background_color": "#FFFFFF",
   "theme_color": "#0056A6",
   "orientation": "portrait-primary",
   "icons": [
