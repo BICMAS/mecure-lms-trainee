@@ -152,7 +152,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     onStart(course.id);
   };
 
-   // console.log("Course image:", course.thumbnail, course);
+  const thumbnailSrc =
+    course.thumbnail ||
+    (course as Course & { imageUrl?: string | null }).imageUrl ||
+    "";
 
   // ----------------------------
   // UI
@@ -167,7 +170,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       <div className="relative h-40 overflow-hidden group">
         <img
           src={
-            course.thumbnail ||
+            thumbnailSrc ||
             `https://picsum.photos/seed/${course.id}/600/400`
           }
           alt={course.title}

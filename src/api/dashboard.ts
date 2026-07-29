@@ -306,6 +306,7 @@ export async function fetchLearnerDashboard(): Promise<LearnerDashboardViewModel
       status: deriveStatus(progress, rawStatus),
       totalModules,
       completedModules,
+      thumbnail: course?.imageUrl ?? "",
     };
   });
 
