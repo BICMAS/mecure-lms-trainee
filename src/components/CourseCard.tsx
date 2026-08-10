@@ -197,12 +197,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           )}
         </div>
 
-        {course.category === "Mandatory" && (
-          <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-            MANDATORY
-          </span>
-        )}
-
           {isFailed && (
             <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
               RETAKE
