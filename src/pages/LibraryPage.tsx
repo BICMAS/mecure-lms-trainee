@@ -8,14 +8,7 @@ import { CourseStatus } from "@/types";
 import { CourseCard } from "@/components/CourseCard";
 import { useNavigate } from "react-router-dom";
 
-type LibraryFilter = "ALL" | "MANDATORY" | "RECOMMENDED" | "COMPLETED";
-
-const FILTERS = [
-  { label: "All", value: "ALL" },
-  { label: "Mandatory", value: "MANDATORY" },
-  { label: "Recommended", value: "RECOMMENDED" },
-  { label: "Completed", value: "COMPLETED" },
-];
+type LibraryFilter = "ALL" | "COMPLETED" | string;
 
 export default function LibraryPage() {
   const { data: dashboardData } = useDashboard();
@@ -36,6 +29,22 @@ export default function LibraryPage() {
     }));
   }, [courses, downloadedIds]);
 
+  const topicFilters = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const course of libraryCourses) {
+      if (course.category?.id && course.category.name) {
+        seen.set(course.category.id, course.category.name);
+      }
+    }
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [libraryCourses]);
+
+  const chips: Array<{ label: string; value: LibraryFilter }> = [
+    { label: "All", value: "ALL" },
+    { label: "Completed", value: "COMPLETED" },
+    ...topicFilters.map(([id, name]) => ({ label: name, value: id })),
+  ];
+
   const filteredCourses = useMemo(() => {
     return libraryCourses.filter((course) => {
       if (isOffline && !course.isDownloaded) return false;
@@ -49,11 +58,11 @@ export default function LibraryPage() {
       if (filter === "COMPLETED")
         return course.status === CourseStatus.Completed;
 
-      if (filter === "MANDATORY")
-        return course.category === "Mandatory";
-
-      if (filter === "RECOMMENDED")
-        return course.category === "Recommended";
+      if (filter !== "ALL") {
+        return (
+          course.category?.id === filter || course.category?.slug === filter
+        );
+      }
 
       return true;
     });
@@ -91,12 +100,12 @@ export default function LibraryPage() {
         </div>
 
         <div className="flex gap-2 overflow-x-auto">
-          {FILTERS.map((f) => (
+          {chips.map((f) => (
             <button
               key={f.value}
-              onClick={() => setFilter(f.value as LibraryFilter)}
+              onClick={() => setFilter(f.value)}
               aria-pressed={filter === f.value}
-              className={`px-4 py-2 rounded-full text-sm ${
+              className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${
                 filter === f.value
                   ? "bg-slate-900 text-white"
                   : "bg-white border"

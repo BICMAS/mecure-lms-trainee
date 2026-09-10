@@ -1,5 +1,48 @@
 import { Course, CourseStatus } from "@/types";
 
+export function mapCourseCategory(raw: unknown): Course["category"] {
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    const name = raw.trim();
+    if (!name || name === "Mandatory" || name === "Recommended" || name === "Optional") {
+      return null;
+    }
+    return {
+      id: name,
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+    };
+  }
+  if (typeof raw === "object") {
+    const category = raw as { id?: string; name?: string; slug?: string };
+    if (!category.name) return null;
+    return {
+      id: category.id ?? category.slug ?? category.name,
+      name: category.name,
+      slug: category.slug ?? "",
+    };
+  }
+  return null;
+}
+
+function pickRawCategory(assignment: any) {
+  return (
+    assignment?.course?.category ??
+    assignment?.category ??
+    assignment?.course?.topic ??
+    null
+  );
+}
+
+function pickDurationEstimate(assignment: any): number | null {
+  const value =
+    assignment?.course?.durationEstimate ??
+    assignment?.durationEstimate ??
+    null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function normalizeProgress(value?: number) {
   if (typeof value !== "number") return 0;
   const percent = value > 0 && value <= 1 ? value * 100 : value;
@@ -85,7 +128,8 @@ export function mapAssignedCourse(assignment: any): Course {
     description: course.description ?? "",
     thumbnail: course.imageUrl ?? null,
 
-    category: "Mandatory",
+    category: mapCourseCategory(pickRawCategory(assignment)),
+    durationEstimate: pickDurationEstimate(assignment),
     status: deriveStatus(
       progress,
       rawStatus,
@@ -105,6 +149,7 @@ export function mapAssignedCourse(assignment: any): Course {
     pacingStartDate: course.pacingStartDate ?? null,
     modulePacingDays: course.modulePacingDays ?? 7,
     assignmentId: assignment.id ?? assignment.assignmentId ?? null,
+    isLocked: Boolean(course.isLocked ?? assignment.isLocked),
     quizScore:
       assignment.scorePercent ??
       assignment.quizScore ??

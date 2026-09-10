@@ -16,12 +16,18 @@ export interface ScormModule {
 
 }
 
+export interface CourseCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Course {
   id: string;
   title: string;
   description: string;
   thumbnail: string;
-  category: "Mandatory" | "Recommended" | "Optional";
+  category: CourseCategory | null;
   status: CourseStatus;
   progress: number;
   totalModules: number;
@@ -38,6 +44,8 @@ export interface Course {
   pacingStartDate?: string | null;
   modulePacingDays?: number;
   assignmentId?: string;
+  isLocked?: boolean;
+  durationEstimate?: number | null;
 }
 
 export interface User {

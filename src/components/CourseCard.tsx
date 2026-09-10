@@ -8,8 +8,10 @@ import {
   Award,
   Clock,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 import { hasCourseBeenStartedLocally, markCourseStartedLocally } from "@/utils/courseStartState";
+import { formatDurationLabel } from "@/utils/formatDuration";
 
 interface CourseCardProps {
   course: Course;
@@ -83,7 +85,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
   const isCompleted = safeStatus === CourseStatus.Completed;
   const isFailed = safeStatus === CourseStatus.Failed;
-  const isDisabled = isOfflineMode && !course.isDownloaded;
+  const isCourseLocked = Boolean(course.isLocked);
+  const isDisabled = (isOfflineMode && !course.isDownloaded) || isCourseLocked;
 
   // ----------------------------
   // Status UI (always safe now)
@@ -133,8 +136,9 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     });
   }
 
-  const buttonLabel =
-    safeStatus === CourseStatus.Completed
+  const buttonLabel = isCourseLocked
+    ? "Locked by admin"
+    : safeStatus === CourseStatus.Completed
       ? "Completed"
       : safeStatus === CourseStatus.Failed
         ? "Retake Course"
@@ -148,6 +152,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   };
 
   const handleStart = () => {
+    if (isCourseLocked) return;
     markCourseStartedLocally(course.id);
     onStart(course.id);
   };
@@ -156,6 +161,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     course.thumbnail ||
     (course as Course & { imageUrl?: string | null }).imageUrl ||
     "";
+
+  const durationLabel = formatDurationLabel(course.durationEstimate);
 
   // ----------------------------
   // UI
@@ -195,6 +202,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               <Play size={24} fill="currentColor" />
             </button>
           )}
+          {isCourseLocked && (
+            <span className="bg-white/95 text-slate-800 text-xs font-semibold px-3 py-1.5 rounded-full">
+              Locked by admin
+            </span>
+          )}
         </div>
 
           {isFailed && (
@@ -217,12 +229,28 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         </div>
 
         {/* Status badge */}
-        <div className="mb-2">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
           <span
             className={`text-xs px-2 py-1 rounded-full font-medium ${statusUI.badge}`}
           >
             {statusUI.label}
           </span>
+          {course.category?.name && (
+            <span className="text-xs px-2 py-1 rounded-full font-medium bg-slate-100 text-slate-600">
+              {course.category.name}
+            </span>
+          )}
+          {durationLabel && (
+            <span className="text-xs px-2 py-1 rounded-full font-medium bg-slate-100 text-slate-600 inline-flex items-center gap-1">
+              <Clock size={12} />
+              {durationLabel}
+            </span>
+          )}
+          {isCourseLocked && (
+            <span className="text-xs px-2 py-1 rounded-full font-medium bg-slate-800 text-white inline-flex items-center gap-1">
+              <Lock size={12} /> Locked by admin
+            </span>
+          )}
         </div>
 
         <p className="text-slate-500 text-sm mb-4 line-clamp-2 flex-1">

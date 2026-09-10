@@ -2,6 +2,7 @@ import { Course, CourseStatus, LearningPath, UserStats } from "../types";
 import { getApiV1BaseUrl } from "@/config/api";
 import { getAccessToken } from "../utils/auth";
 import { fetchWithAuthRetry } from "../utils/fetchWithAuthRetry";
+import { mapCourseCategory } from "@/mappers/assignedCourseMapper";
 
 const API_BASE = getApiV1BaseUrl();
 
@@ -14,6 +15,7 @@ interface RawAssignment {
   courseId: string;
   dueDate: string | null;
   course: Course;
+  category?: unknown;
   progress?: number | null;
   completionPercentage?: number | null;
   scormCloudCompletion?: number | null;
@@ -307,6 +309,11 @@ export async function fetchLearnerDashboard(): Promise<LearnerDashboardViewModel
       totalModules,
       completedModules,
       thumbnail: course?.imageUrl ?? "",
+      category: mapCourseCategory(course?.category ?? assignment.category),
+      durationEstimate:
+        typeof course?.durationEstimate === "number" && course.durationEstimate > 0
+          ? course.durationEstimate
+          : null,
     };
   });
 
