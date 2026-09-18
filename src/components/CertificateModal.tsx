@@ -1,12 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Download, Linkedin, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { downloadMyCourseCertificate, saveCertificateBlob } from '@/api/certificates';
+import {
+  downloadMyCourseCertificate,
+  downloadMyTopicCertificate,
+  saveCertificateBlob,
+} from '@/api/certificates';
 
 interface CertificateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   courseId?: string;
+  categoryId?: string;
   courseTitle: string;
   recipientName: string;
   certificateUrl?: string;
@@ -19,6 +24,7 @@ isOpen,
 onClose,
 onConfirm,
 courseId,
+categoryId,
 courseTitle,
 certificateUrl
 }) => {
@@ -71,7 +77,7 @@ certificateUrl
   };
 
  const handleLinkedInShare = () => {
-    const text = `I just successfully completed the "${courseTitle}" course at MeCure Excellence Academy! #Learning #ProfessionalDevelopment #MeCureAcademy`;
+    const text = `I just successfully completed the "${courseTitle}" topic at MeCure Excellence Academy! #Learning #ProfessionalDevelopment #MeCureAcademy`;
     const url = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
   };
@@ -104,6 +110,16 @@ certificateUrl
 
    processingTimeoutRef.current = window.setTimeout(async () => {
       try {
+        if (categoryId) {
+          const blob = await downloadMyTopicCertificate(categoryId);
+          saveCertificateBlob(
+            blob,
+            `${sanitizeFileName(courseTitle)}_Certificate.pdf`,
+          );
+          completeSuccess();
+          return;
+        }
+
         if (courseId) {
           const blob = await downloadMyCourseCertificate(courseId);
           saveCertificateBlob(

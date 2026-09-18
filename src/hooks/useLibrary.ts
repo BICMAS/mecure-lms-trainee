@@ -143,6 +143,8 @@ export const useLibrary = (dashboardCourses: Course[] = []) => {
           isDownloaded: downloadedIds.includes(course.id),
           category: course.category ?? match?.category ?? null,
           durationEstimate: course.durationEstimate ?? match?.durationEstimate ?? null,
+          categoryCertificate:
+            course.categoryCertificate ?? match?.categoryCertificate ?? null,
         };
       });
     },

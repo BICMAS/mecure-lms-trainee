@@ -22,6 +22,19 @@ export interface CourseCategory {
   slug: string;
 }
 
+export interface CategoryCertificateStatus {
+  categoryId: string;
+  categoryName: string;
+  categorySlug?: string;
+  assignedCount: number;
+  completedCount: number;
+  eligible: boolean;
+  hasCertificate: boolean;
+  certificateId?: string | null;
+  incompleteCourseIds?: string[];
+  certificateUrl?: string | null;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -36,6 +49,7 @@ export interface Course {
   isDownloaded: boolean;
   modules: PlayerModule[];
   certificateUrl?: string;
+  categoryCertificate?: CategoryCertificateStatus | null;
   scormPackageId?: string;
   quizScore?: number | null;
   passingScore?: number;

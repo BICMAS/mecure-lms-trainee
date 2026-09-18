@@ -160,7 +160,15 @@ export default function LibraryPage() {
             status={course.status}
             onStart={() => navigate(`/course/${course.id}`)}
             onPracticeRetake={() => navigate(`/course/${course.id}?practice=1`)}
-            onViewCertificate={() => navigate(`/certificates?course=${course.id}`)}
+            onViewCertificate={() => {
+              const categoryId = course.categoryCertificate?.categoryId
+                ?? course.category?.id;
+              if (categoryId) {
+                navigate(`/certificates?category=${categoryId}`);
+              } else {
+                navigate(`/certificates?course=${course.id}`);
+              }
+            }}
             onDownload={() => download(course.id)}
             onRemoveDownload={() => remove(course.id)}
             isOfflineMode={isOffline}

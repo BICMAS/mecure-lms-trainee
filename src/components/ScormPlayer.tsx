@@ -615,9 +615,18 @@ export const ScormPlayer: React.FC<ScormPlayerProps> = ({
                       isCompletionSyncing ||
                       (sessionPassed !== true && !officiallyCompleted)
                     }
+                    title={
+                      course.categoryCertificate && !course.categoryCertificate.eligible
+                        ? `Finish all courses in ${course.categoryCertificate.categoryName} (${course.categoryCertificate.completedCount}/${course.categoryCertificate.assignedCount})`
+                        : "View topic certificate"
+                    }
                   >
                     <Download size={18} />
-                    {isCompletionSyncing ? "Syncing..." : "Certificate"}
+                    {isCompletionSyncing
+                      ? "Syncing..."
+                      : course.categoryCertificate && !course.categoryCertificate.eligible
+                        ? "Topic certificate"
+                        : "Certificate"}
                   </button>
                   <button
                     onClick={() => void handlePracticeRetake()}

@@ -73,6 +73,7 @@ export const useAttemptSync = () => {
         const claimed = await claimMyCourseCertificate(courseId);
         const certificateUrl =
           claimed?.certificate?.certificateUrl ?? claimed?.certificate?.pdfPath;
+        const categoryId = claimed?.categoryId;
 
         if (certificateUrl) {
           queryClient.setQueriesData({ queryKey: ["dashboard"] }, (old: any) => {
@@ -85,6 +86,20 @@ export const useAttemptSync = () => {
                   ? {
                       ...course,
                       certificateUrl,
+                      categoryCertificate: {
+                        ...(course.categoryCertificate ?? {}),
+                        categoryId:
+                          categoryId
+                          ?? course.categoryCertificate?.categoryId
+                          ?? course.category?.id,
+                        categoryName:
+                          claimed?.categoryName
+                          ?? course.categoryCertificate?.categoryName
+                          ?? course.category?.name,
+                        eligible: true,
+                        hasCertificate: true,
+                        certificateUrl,
+                      },
                     }
                   : course,
               ),
@@ -92,6 +107,7 @@ export const useAttemptSync = () => {
           });
         }
       } catch (error) {
+        // Expected when other courses in the topic are still incomplete.
         console.warn("[CERTIFICATE] Claim skipped/failed", error);
       }
 

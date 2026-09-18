@@ -313,19 +313,33 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                   Practice
                 </button>
               )}
-              {isCompleted && (
+              {isCompleted && course.categoryCertificate?.eligible && (
                 <div className="text-yellow-600 flex items-center gap-1 text-xs font-medium bg-yellow-50 px-2 py-1 rounded-full">
                   <Award size={12} /> Certified
                 </div>
               )}
-              {isCompleted && onViewCertificate && (
+              {isCompleted &&
+                onViewCertificate &&
+                course.categoryCertificate?.eligible && (
                 <button
                   onClick={() => onViewCertificate(course.id)}
                   className="text-xs font-medium text-brand-primary hover:text-brand-primary-dark"
-                  title="Download Certificate"
+                  title="Download topic certificate"
                 >
                   Certificate
                 </button>
+              )}
+              {isCompleted &&
+                course.category?.name &&
+                course.categoryCertificate &&
+                !course.categoryCertificate.eligible && (
+                <span
+                  className="text-xs text-slate-500"
+                  title={`Finish all courses in ${course.categoryCertificate.categoryName} (${course.categoryCertificate.completedCount}/${course.categoryCertificate.assignedCount})`}
+                >
+                  Topic {course.categoryCertificate.completedCount}/
+                  {course.categoryCertificate.assignedCount}
+                </span>
               )}
 
               {course.isDownloaded ? (

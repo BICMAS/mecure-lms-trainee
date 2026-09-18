@@ -154,6 +154,7 @@ export function mapAssignedCourse(assignment: any): Course {
       assignment.scorePercent ??
       assignment.quizScore ??
       null,
+    categoryCertificate: assignment.categoryCertificate ?? null,
 
     modules: modules.map((m: any) => ({
       id: m.id,

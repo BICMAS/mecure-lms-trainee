@@ -58,7 +58,15 @@ export default function PlayerPage() {
       course={course}
       onBack={() => navigate("/library")}
       onUpdateProgress={updateProgress}
-      onViewCertificate={() => navigate(`/certificates?course=${course.id}`)}
+      onViewCertificate={() => {
+        const categoryId = course.categoryCertificate?.categoryId
+          ?? course.category?.id;
+        if (categoryId) {
+          navigate(`/certificates?category=${categoryId}`);
+        } else {
+          navigate(`/certificates?course=${course.id}`);
+        }
+      }}
     />
   );
 }
