@@ -4,7 +4,7 @@ import { useLibrary } from "@/hooks/useLibrary";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useDownloadStore } from "@/store/downloadStore";
-import { CourseStatus } from "@/types";
+import { Course, CourseStatus } from "@/types";
 import { CourseCard } from "@/components/CourseCard";
 import { useNavigate } from "react-router-dom";
 import { LibrarySort, sortLibraryCourses } from "@/utils/librarySort";
@@ -13,10 +13,11 @@ type LibraryFilter = "ALL" | "COMPLETED" | string;
 
 export default function LibraryPage() {
   const { data: dashboardData } = useDashboard();
-  const { data: courses = [], isLoading, isError } = useLibrary(
+  const { data: assignedCourses = [], isLoading, isError } = useLibrary(
     dashboardData?.courses ?? [],
   );
-  const { downloadedIds, download, remove } = useDownloadStore();
+  const courses: Course[] = assignedCourses;
+  const { downloadedIds } = useDownloadStore();
   const isOffline = useOfflineStatus();
   const navigate = useNavigate();
 
@@ -91,11 +92,11 @@ export default function LibraryPage() {
     <div className="space-y-6">
       {/* Search, sort, and chips */}
       <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div className="relative w-full sm:w-80 md:w-96">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
+          <div className="relative w-full sm:w-56">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={20}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+              size={16}
             />
             <input
               type="text"
@@ -103,7 +104,7 @@ export default function LibraryPage() {
               aria-label="Search courses"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border"
+              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border"
             />
           </div>
 
@@ -113,7 +114,7 @@ export default function LibraryPage() {
               value={sort}
               onChange={(e) => setSort(e.target.value as LibrarySort)}
               aria-label="Sort courses"
-              className="rounded-xl border bg-white px-3 py-2 text-sm"
+              className="w-44 rounded-lg border bg-white px-2 py-1.5 text-sm"
             >
               <option value="dueDate">Due date (soonest first)</option>
               <option value="title">Title A–Z</option>
@@ -169,8 +170,6 @@ export default function LibraryPage() {
                 navigate(`/certificates?course=${course.id}`);
               }
             }}
-            onDownload={() => download(course.id)}
-            onRemoveDownload={() => remove(course.id)}
             isOfflineMode={isOffline}
           />
         ))}

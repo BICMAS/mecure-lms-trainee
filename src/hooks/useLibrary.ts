@@ -62,7 +62,7 @@ export const useLibrary = (dashboardCourses: Course[] = []) => {
       return { assignments, scormScores };
     },
     enabled: true,
-    select: ({ assignments, scormScores }) => {
+    select: ({ assignments, scormScores }): Course[] => {
       const downloadedIds = getDownloadedCourses();
       const scormByPackageId = new Map<string, number>();
       const scormByCourseId = new Map<string, number>();
@@ -103,7 +103,12 @@ export const useLibrary = (dashboardCourses: Course[] = []) => {
         }
       });
 
-      return assignments.map(mapAssignedCourse).map((course) => {
+      const assignmentList: unknown[] = Array.isArray(assignments)
+        ? assignments
+        : [];
+
+      return assignmentList.map((assignment) => {
+        const course = mapAssignedCourse(assignment);
         const match = dashboardCourses.find((c) => c.id === course.id);
         const scormProgressByPackage = course.scormPackageId
           ? scormByPackageId.get(course.scormPackageId) ?? 0

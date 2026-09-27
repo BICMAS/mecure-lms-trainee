@@ -3,7 +3,6 @@ import { useDashboard } from "@/hooks/useDashboard";
 import { useLibrary } from "@/hooks/useLibrary";
 import { useLearningPaths } from "@/hooks/useLearningPaths";
 import { mapLearningPath } from "@/mappers/learningPathMapper";
-import { useDownloadStore } from "@/store/downloadStore";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { CourseStatus, UserStats } from "@/types";
@@ -32,7 +31,6 @@ export default function DashboardPage() {
     isError: isLibraryError,
   } = useLibrary(dashboardCourses);
   const { data: learningPaths = [] } = useLearningPaths();
-  const { download, remove } = useDownloadStore();
   const navigate = useNavigate();
   const courses = libraryCourses.length ? libraryCourses : dashboardCourses;
   const isOnline = useOnlineStatus();
@@ -65,8 +63,6 @@ export default function DashboardPage() {
       user={user}
       learningPath={learningPath}
       onStartCourse={(courseId) => navigate(`/course/${courseId}`)}
-      onDownload={download}
-      onRemoveDownload={remove}
       isOfflineMode={!isOnline}
     />
   );

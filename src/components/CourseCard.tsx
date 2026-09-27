@@ -3,8 +3,6 @@ import { Course, CourseStatus } from "../types";
 import {
   Play,
   CheckCircle,
-  Download,
-  Trash2,
   Award,
   Clock,
   RotateCcw,
@@ -20,8 +18,6 @@ interface CourseCardProps {
   onStart: (id: string) => void;
   onPracticeRetake?: (id: string) => void;
   onViewCertificate?: (id: string) => void;
-  onDownload: (id: string) => void;
-  onRemoveDownload: (id: string) => void;
   isOfflineMode: boolean;
 }
 
@@ -64,8 +60,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   onStart,
   onPracticeRetake,
   onViewCertificate,
-  onDownload,
-  onRemoveDownload,
   isOfflineMode,
 }) => {
   // ----------------------------
@@ -146,10 +140,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           ? "Resume"
           : "Start Course";
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await onDownload(course.id);
-  };
+  const moduleCount = course.totalModules ?? course.modules?.length ?? 0;
+  const moduleLabel = moduleCount === 1 ? "1 module" : `${moduleCount} modules`;
 
   const handleStart = () => {
     if (isCourseLocked) return;
@@ -253,7 +245,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           )}
         </div>
 
-        <p className="text-slate-500 text-sm mb-4 line-clamp-2 flex-1">
+        <p className="text-slate-500 text-sm mb-4 flex-1">
           {course.description}
         </p>
 
@@ -342,27 +334,9 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 </span>
               )}
 
-              {course.isDownloaded ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveDownload(course.id);
-                  }}
-                  className="text-green-600 hover:text-red-500 transition-colors p-1"
-                  title="Remove Download"
-                >
-                  <Trash2 size={16} />
-                </button>
-              ) : (
-                <button
-                  onClick={handleDownload}
-                  className="text-slate-400 hover:text-slate-600 transition-colors p-1"
-                  title="Download for Offline"
-                  disabled={isOfflineMode}
-                >
-                  {isOfflineMode ? <Clock size={16} /> : <Download size={16} />}
-                </button>
-              )}
+              <span className="text-xs font-medium text-slate-500">
+                {moduleLabel}
+              </span>
             </div>
           </div>
         </div>

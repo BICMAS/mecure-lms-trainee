@@ -2,7 +2,6 @@ import { useLearningPaths } from "@/hooks/useLearningPaths";
 import { useLibrary } from "@/hooks/useLibrary";
 import { useDashboard } from "@/hooks/useDashboard";
 import { CourseCard } from "@/components/CourseCard";
-import { useDownloadStore } from "@/store/downloadStore";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { Course } from "@/types";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +10,6 @@ export default function LearningPathsPage() {
   const { data: paths, isLoading } = useLearningPaths();
   const { data: dashboardData } = useDashboard();
   const { data: libraryCourses = [] } = useLibrary(dashboardData?.courses ?? []);
-  const { download, remove } = useDownloadStore();
   const isOffline = useOfflineStatus();
   const navigate = useNavigate();
 
@@ -48,8 +46,6 @@ export default function LearningPathsPage() {
                   onPracticeRetake={() =>
                     navigate(`/course/${course.id}?practice=1`)
                   }
-                  onDownload={() => download(course.id)}
-                  onRemoveDownload={() => remove(course.id)}
                   isOfflineMode={isOffline}
                 />
               ))}

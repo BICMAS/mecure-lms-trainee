@@ -54,8 +54,6 @@ interface DashboardProps {
   learningPath?: LearningPath | null;
   stats: UserStats;
   onStartCourse: (id: string) => void;
-  onDownload: (id: string) => void;
-  onRemoveDownload: (id: string) => void;
   isOfflineMode: boolean;
   user: User;
 }
@@ -87,8 +85,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   learningPath,
   stats,
   onStartCourse,
-  onDownload,
-  onRemoveDownload,
   isOfflineMode,
   user,
 }) => {
@@ -787,8 +783,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     progress={course.progress}
                     status={course.status}
                     onStart={onStartCourse}
-                    onDownload={onDownload}
-                    onRemoveDownload={onRemoveDownload}
                     isOfflineMode={isOfflineMode}
                   />
                 ))}
