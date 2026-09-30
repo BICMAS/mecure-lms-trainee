@@ -140,9 +140,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           ? "Resume"
           : "Start Course";
 
-  const moduleCount = course.totalModules ?? course.modules?.length ?? 0;
-  const moduleLabel = moduleCount === 1 ? "1 module" : `${moduleCount} modules`;
-
   const handleStart = () => {
     if (isCourseLocked) return;
     markCourseStartedLocally(course.id);
@@ -333,10 +330,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                   {course.categoryCertificate.assignedCount}
                 </span>
               )}
-
-              <span className="text-xs font-medium text-slate-500">
-                {moduleLabel}
-              </span>
             </div>
           </div>
         </div>
